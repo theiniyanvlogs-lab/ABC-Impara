@@ -58,6 +58,40 @@
       line-height: 1.5;
     }
 
+    .voice-panel {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 18px;
+      padding: 12px;
+      background: #eef7ff;
+      border-radius: 14px;
+    }
+
+    .voice-label {
+      font-weight: bold;
+      color: #444;
+      font-size: 1rem;
+    }
+
+    .voice-select {
+      padding: 10px 14px;
+      border-radius: 12px;
+      border: 2px solid #cfd8dc;
+      font-size: 1rem;
+      min-width: 220px;
+      max-width: 100%;
+      font-family: inherit;
+      outline: none;
+    }
+
+    .btn-test-voice {
+      background: linear-gradient(135deg, #8ec5fc 0%, #e0c3fc 100%);
+      color: #333;
+    }
+
     .slide-container {
       display: flex;
       flex-direction: column;
@@ -247,6 +281,11 @@
       color: #333;
     }
 
+    .btn-mute {
+      background: linear-gradient(135deg, #ffb347 0%, #ffcc33 100%);
+      color: #333;
+    }
+
     .footer-note {
       text-align: center;
       margin-top: 18px;
@@ -268,6 +307,10 @@
         min-width: 110px;
         padding: 11px 16px;
       }
+
+      .voice-select {
+        min-width: 100%;
+      }
     }
   </style>
 </head>
@@ -278,8 +321,17 @@
     </div>
 
     <div class="instructions">
-      👆 Click <strong>"🔊 Speak"</strong> to hear the letter, or use
-      <strong>"▶ Auto Play"</strong> to learn automatically!
+      👆 Click <strong>"🔊 Speak"</strong> to hear the letter, use
+      <strong>"▶ Auto Play"</strong> to run automatically, use
+      <strong>"🔇 Mute"</strong> for silent auto play, and choose your favorite voice below!
+    </div>
+
+    <div class="voice-panel">
+      <span class="voice-label">🎙️ Select Voice:</span>
+      <select id="voiceSelect" class="voice-select">
+        <option value="">Loading voices...</option>
+      </select>
+      <button class="btn btn-test-voice" id="testVoiceBtn">🧪 Test Voice</button>
     </div>
 
     <div class="slide-container" id="slideContainer">
@@ -295,6 +347,7 @@
     <div class="controls">
       <button class="btn btn-prev" id="prevBtn">⬅ Previous</button>
       <button class="btn btn-speak" id="speakBtn">🔊 Speak</button>
+      <button class="btn btn-mute" id="muteBtn">🔇 Mute</button>
       <button class="btn btn-auto" id="autoPlayBtn">▶ Auto Play</button>
       <button class="btn btn-next" id="nextBtn">Next ➡</button>
     </div>
@@ -335,7 +388,9 @@
     let currentSlide = 0;
     let autoPlayInterval = null;
     let isAutoPlaying = false;
-    let voicesReady = false;
+    let isMuted = false;
+    let voices = [];
+    let selectedVoice = null;
 
     function initSlides() {
       const container = document.getElementById('slideContainer');
@@ -369,6 +424,81 @@
       });
 
       updateProgress();
+      updateMuteButton();
+    }
+
+    function populateVoiceList() {
+      voices = window.speechSynthesis.getVoices();
+      const voiceSelect = document.getElementById('voiceSelect');
+
+      voiceSelect.innerHTML = '';
+
+      if (!voices.length) {
+        const option = document.createElement('option');
+        option.value = '';
+        option.textContent = 'No voices found';
+        voiceSelect.appendChild(option);
+        return;
+      }
+
+      const defaultOption = document.createElement('option');
+      defaultOption.value = '';
+      defaultOption.textContent = 'Auto Select Best Voice';
+      voiceSelect.appendChild(defaultOption);
+
+      voices.forEach((voice, index) => {
+        const option = document.createElement('option');
+        option.value = index;
+        option.textContent = `${voice.name} (${voice.lang})`;
+        voiceSelect.appendChild(option);
+      });
+
+      // Auto select best voice
+      const bestVoiceIndex = voices.findIndex(v =>
+        (v.lang === 'en-GB' && /female|google/i.test(v.name)) ||
+        (v.lang === 'en-US' && /female|google|samantha|zira/i.test(v.name)) ||
+        (v.lang.startsWith('en'))
+      );
+
+      if (bestVoiceIndex >= 0) {
+        voiceSelect.value = String(bestVoiceIndex);
+        selectedVoice = voices[bestVoiceIndex];
+      } else {
+        selectedVoice = null;
+      }
+    }
+
+    function getPreferredVoice() {
+      if (selectedVoice) return selectedVoice;
+
+      if (!voices.length) voices = window.speechSynthesis.getVoices();
+
+      return (
+        voices.find(v => v.lang === 'en-GB' && /female|google/i.test(v.name)) ||
+        voices.find(v => v.lang === 'en-US' && /female|google|samantha|zira/i.test(v.name)) ||
+        voices.find(v => v.lang === 'en-US') ||
+        voices.find(v => v.lang.startsWith('en')) ||
+        voices[0] ||
+        null
+      );
+    }
+
+    function updateProgress() {
+      const progress = ((currentSlide + 1) / alphabetData.length) * 100;
+      document.getElementById('progressBar').style.width = `${progress}%`;
+      document.getElementById('slideCounter').textContent =
+        `Letter ${currentSlide + 1} of ${alphabetData.length}`;
+    }
+
+    function updateMuteButton() {
+      const muteBtn = document.getElementById('muteBtn');
+      if (isMuted) {
+        muteBtn.textContent = '🔈 Unmute';
+        muteBtn.style.background = 'linear-gradient(135deg, #cfd9df 0%, #e2ebf0 100%)';
+      } else {
+        muteBtn.textContent = '🔇 Mute';
+        muteBtn.style.background = 'linear-gradient(135deg, #ffb347 0%, #ffcc33 100%)';
+      }
     }
 
     function showSlide(index) {
@@ -379,26 +509,9 @@
       updateProgress();
     }
 
-    function updateProgress() {
-      const progress = ((currentSlide + 1) / alphabetData.length) * 100;
-      document.getElementById('progressBar').style.width = `${progress}%`;
-      document.getElementById('slideCounter').textContent =
-        `Letter ${currentSlide + 1} of ${alphabetData.length}`;
-    }
-
-    function getPreferredVoice() {
-      const voices = window.speechSynthesis.getVoices();
-      if (!voices || !voices.length) return null;
-
-      return (
-        voices.find(v => v.lang === 'en-US' && /female|google|samantha|zira/i.test(v.name)) ||
-        voices.find(v => v.lang === 'en-US') ||
-        voices.find(v => v.lang.startsWith('en')) ||
-        voices[0]
-      );
-    }
-
     function speak(text) {
+      if (isMuted) return;
+
       if (!('speechSynthesis' in window)) {
         alert('Text-to-speech is not supported in this browser.');
         return;
@@ -412,7 +525,9 @@
       utterance.volume = 1;
 
       const preferredVoice = getPreferredVoice();
-      if (preferredVoice) utterance.voice = preferredVoice;
+      if (preferredVoice) {
+        utterance.voice = preferredVoice;
+      }
 
       window.speechSynthesis.speak(utterance);
     }
@@ -422,6 +537,10 @@
       speak(`${data.letter}. ${data.word}. ${data.letter} is for ${data.word}.`);
     }
 
+    function testSelectedVoice() {
+      speak('Hello! This is the selected voice for ABC Learning Adventure.');
+    }
+
     function nextSlide() {
       if (currentSlide < alphabetData.length - 1) {
         showSlide(currentSlide + 1);
@@ -429,7 +548,7 @@
         showSlide(0);
       }
 
-      if (isAutoPlaying) {
+      if (isAutoPlaying && !isMuted) {
         setTimeout(speakCurrentLetter, 350);
       }
     }
@@ -441,7 +560,7 @@
         showSlide(alphabetData.length - 1);
       }
 
-      if (isAutoPlaying) {
+      if (isAutoPlaying && !isMuted) {
         setTimeout(speakCurrentLetter, 350);
       }
     }
@@ -459,43 +578,77 @@
         isAutoPlaying = true;
         btn.textContent = '⏸ Pause';
         btn.style.background = 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)';
-        speakCurrentLetter();
+
+        if (!isMuted) {
+          speakCurrentLetter();
+        }
+
         autoPlayInterval = setInterval(nextSlide, 5000);
       }
     }
 
+    function toggleMute() {
+      isMuted = !isMuted;
+      updateMuteButton();
+
+      if (isMuted) {
+        window.speechSynthesis.cancel();
+      } else {
+        if (isAutoPlaying) {
+          setTimeout(speakCurrentLetter, 300);
+        }
+      }
+    }
+
+    document.getElementById('voiceSelect').addEventListener('change', function () {
+      const selectedIndex = this.value;
+
+      if (selectedIndex === '') {
+        selectedVoice = null;
+      } else {
+        selectedVoice = voices[parseInt(selectedIndex, 10)];
+      }
+    });
+
+    document.getElementById('testVoiceBtn').addEventListener('click', testSelectedVoice);
+
     document.getElementById('nextBtn').addEventListener('click', () => {
       nextSlide();
-      if (!isAutoPlaying) speakCurrentLetter();
+      if (!isAutoPlaying && !isMuted) speakCurrentLetter();
     });
 
     document.getElementById('prevBtn').addEventListener('click', () => {
       prevSlide();
-      if (!isAutoPlaying) speakCurrentLetter();
+      if (!isAutoPlaying && !isMuted) speakCurrentLetter();
     });
 
-    document.getElementById('speakBtn').addEventListener('click', speakCurrentLetter);
+    document.getElementById('speakBtn').addEventListener('click', () => {
+      if (!isMuted) speakCurrentLetter();
+    });
+
     document.getElementById('autoPlayBtn').addEventListener('click', toggleAutoPlay);
+    document.getElementById('muteBtn').addEventListener('click', toggleMute);
 
     document.addEventListener('keydown', (e) => {
       if (e.key === 'ArrowRight' || e.key === ' ') {
         e.preventDefault();
         nextSlide();
-        if (!isAutoPlaying) speakCurrentLetter();
+        if (!isAutoPlaying && !isMuted) speakCurrentLetter();
       } else if (e.key === 'ArrowLeft') {
         e.preventDefault();
         prevSlide();
-        if (!isAutoPlaying) speakCurrentLetter();
+        if (!isAutoPlaying && !isMuted) speakCurrentLetter();
       } else if (e.key === 's' || e.key === 'S') {
-        speakCurrentLetter();
+        if (!isMuted) speakCurrentLetter();
       } else if (e.key === 'a' || e.key === 'A') {
         toggleAutoPlay();
+      } else if (e.key === 'm' || e.key === 'M') {
+        toggleMute();
       }
     });
 
     window.speechSynthesis.onvoiceschanged = () => {
-      voicesReady = true;
-      window.speechSynthesis.getVoices();
+      populateVoiceList();
     };
 
     document.addEventListener('visibilitychange', () => {
@@ -510,8 +663,11 @@
     window.addEventListener('load', () => {
       initSlides();
 
-      // On mobile browsers, auto speech may be blocked until user taps.
-      // So we avoid auto-speaking on load for better compatibility.
+      // Load voice list
+      setTimeout(() => {
+        populateVoiceList();
+      }, 300);
+
       console.log('ABC Learning Adventure loaded successfully');
     });
   </script>
