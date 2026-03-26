@@ -1,0 +1,519 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ABC Learning Adventure</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Comic Sans MS', 'Chalkboard', cursive, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      overflow-x: hidden;
+      padding: 10px;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1200px;
+      background: white;
+      border-radius: 25px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 16px;
+      position: relative;
+      min-height: 95vh;
+    }
+
+    .header {
+      text-align: center;
+      margin-bottom: 15px;
+      padding: 14px;
+      background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+      border-radius: 18px;
+      color: white;
+    }
+
+    .header h1 {
+      font-size: clamp(1.5rem, 4vw, 2.8rem);
+      text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.2);
+    }
+
+    .instructions {
+      background: #fff9c4;
+      padding: 14px;
+      border-radius: 14px;
+      margin-bottom: 18px;
+      text-align: center;
+      font-size: clamp(0.95rem, 2vw, 1.15rem);
+      color: #555;
+      line-height: 1.5;
+    }
+
+    .slide-container {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 58vh;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .slide {
+      display: none;
+      width: 100%;
+      text-align: center;
+      animation: fadeIn 0.45s ease-in;
+    }
+
+    .slide.active {
+      display: block;
+    }
+
+    @keyframes fadeIn {
+      from {
+        opacity: 0;
+        transform: scale(0.95);
+      }
+      to {
+        opacity: 1;
+        transform: scale(1);
+      }
+    }
+
+    .letter-display {
+      font-size: clamp(6rem, 18vw, 16rem);
+      font-weight: bold;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      text-shadow: 8px 8px 18px rgba(0, 0, 0, 0.08);
+      margin: 10px 0;
+      line-height: 1;
+      animation: bounce 2s infinite;
+    }
+
+    @keyframes bounce {
+      0%, 100% {
+        transform: translateY(0);
+      }
+      50% {
+        transform: translateY(-10px);
+      }
+    }
+
+    .word-display {
+      font-size: clamp(1.8rem, 5vw, 3.4rem);
+      color: #f5576c;
+      margin: 8px 0 16px;
+      font-weight: bold;
+      padding: 0 10px;
+    }
+
+    .image-container {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 24px;
+      margin: 18px 0;
+      flex-wrap: wrap;
+    }
+
+    .baby-photo,
+    .letter-photo {
+      width: min(42vw, 230px);
+      height: min(52vw, 280px);
+      border-radius: 22px;
+      overflow: hidden;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18);
+      border: 7px solid #ffd700;
+      background: #f6f6f6;
+    }
+
+    .baby-photo {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .baby-photo img {
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+      display: block;
+    }
+
+    .baby-fallback {
+      position: absolute;
+      inset: 0;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(4rem, 12vw, 7rem);
+      background: linear-gradient(135deg, #fff6d5 0%, #ffe082 100%);
+    }
+
+    .letter-photo {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: clamp(4rem, 10vw, 8rem);
+      color: white;
+      font-weight: bold;
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 18px;
+      background: #e0e0e0;
+      border-radius: 999px;
+      margin-top: 14px;
+      overflow: hidden;
+    }
+
+    .progress {
+      height: 100%;
+      background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    .slide-counter {
+      text-align: center;
+      margin-top: 12px;
+      font-size: clamp(1rem, 2.5vw, 1.25rem);
+      color: #667eea;
+      font-weight: bold;
+    }
+
+    .controls {
+      display: flex;
+      justify-content: center;
+      gap: 12px;
+      margin-top: 22px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      padding: 12px 22px;
+      font-size: clamp(1rem, 2.4vw, 1.3rem);
+      border: none;
+      border-radius: 999px;
+      cursor: pointer;
+      font-family: inherit;
+      font-weight: bold;
+      transition: all 0.25s ease;
+      box-shadow: 0 5px 14px rgba(0, 0, 0, 0.18);
+      min-width: 120px;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+    }
+
+    .btn:active {
+      transform: translateY(1px);
+    }
+
+    .btn-prev {
+      background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+      color: white;
+    }
+
+    .btn-next {
+      background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+      color: white;
+    }
+
+    .btn-speak {
+      background: linear-gradient(135deg, #fa709a 0%, #fee140 100%);
+      color: white;
+    }
+
+    .btn-auto {
+      background: linear-gradient(135deg, #a8edea 0%, #fed6e3 100%);
+      color: #333;
+    }
+
+    .footer-note {
+      text-align: center;
+      margin-top: 18px;
+      color: #777;
+      font-size: 0.95rem;
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 12px;
+        border-radius: 18px;
+      }
+
+      .image-container {
+        gap: 14px;
+      }
+
+      .btn {
+        min-width: 110px;
+        padding: 11px 16px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>🌟 ABC Learning Adventure 🌟</h1>
+    </div>
+
+    <div class="instructions">
+      👆 Click <strong>"🔊 Speak"</strong> to hear the letter, or use
+      <strong>"▶ Auto Play"</strong> to learn automatically!
+    </div>
+
+    <div class="slide-container" id="slideContainer">
+      <!-- Slides generated by JavaScript -->
+    </div>
+
+    <div class="progress-bar">
+      <div class="progress" id="progressBar"></div>
+    </div>
+
+    <div class="slide-counter" id="slideCounter">Letter 1 of 26</div>
+
+    <div class="controls">
+      <button class="btn btn-prev" id="prevBtn">⬅ Previous</button>
+      <button class="btn btn-speak" id="speakBtn">🔊 Speak</button>
+      <button class="btn btn-auto" id="autoPlayBtn">▶ Auto Play</button>
+      <button class="btn btn-next" id="nextBtn">Next ➡</button>
+    </div>
+
+    <div class="footer-note">Fun learning for kids ✨</div>
+  </div>
+
+  <script>
+    const alphabetData = [
+      { letter: 'A', word: 'Apple', emoji: '🍎' },
+      { letter: 'B', word: 'Ball', emoji: '⚽' },
+      { letter: 'C', word: 'Cat', emoji: '🐱' },
+      { letter: 'D', word: 'Dog', emoji: '🐕' },
+      { letter: 'E', word: 'Elephant', emoji: '🐘' },
+      { letter: 'F', word: 'Fish', emoji: '🐟' },
+      { letter: 'G', word: 'Grapes', emoji: '🍇' },
+      { letter: 'H', word: 'House', emoji: '🏠' },
+      { letter: 'I', word: 'Ice Cream', emoji: '🍦' },
+      { letter: 'J', word: 'Juice', emoji: '🧃' },
+      { letter: 'K', word: 'Kite', emoji: '🪁' },
+      { letter: 'L', word: 'Lion', emoji: '🦁' },
+      { letter: 'M', word: 'Monkey', emoji: '🐵' },
+      { letter: 'N', word: 'Nest', emoji: '🪹' },
+      { letter: 'O', word: 'Orange', emoji: '🍊' },
+      { letter: 'P', word: 'Penguin', emoji: '🐧' },
+      { letter: 'Q', word: 'Queen', emoji: '👸' },
+      { letter: 'R', word: 'Rabbit', emoji: '🐰' },
+      { letter: 'S', word: 'Sun', emoji: '☀️' },
+      { letter: 'T', word: 'Tiger', emoji: '🐯' },
+      { letter: 'U', word: 'Umbrella', emoji: '☂️' },
+      { letter: 'V', word: 'Violin', emoji: '🎻' },
+      { letter: 'W', word: 'Watermelon', emoji: '🍉' },
+      { letter: 'X', word: 'Xylophone', emoji: '🎹' },
+      { letter: 'Y', word: 'Yo-yo', emoji: '🪀' },
+      { letter: 'Z', word: 'Zebra', emoji: '🦓' }
+    ];
+
+    let currentSlide = 0;
+    let autoPlayInterval = null;
+    let isAutoPlaying = false;
+    let voicesReady = false;
+
+    function initSlides() {
+      const container = document.getElementById('slideContainer');
+      container.innerHTML = '';
+
+      alphabetData.forEach((data, index) => {
+        const slide = document.createElement('div');
+        slide.className = 'slide';
+        if (index === 0) slide.classList.add('active');
+
+        slide.innerHTML = `
+          <div class="letter-display">${data.letter}</div>
+          <div class="word-display">${data.word} ${data.emoji}</div>
+
+          <div class="image-container">
+            <div class="baby-photo">
+              <img
+                src="./baby.jpg"
+                alt="Happy Baby Learning ABC"
+                loading="eager"
+                onerror="this.style.display='none'; this.nextElementSibling.style.display='flex';"
+              />
+              <div class="baby-fallback">👶</div>
+            </div>
+
+            <div class="letter-photo">${data.letter}</div>
+          </div>
+        `;
+
+        container.appendChild(slide);
+      });
+
+      updateProgress();
+    }
+
+    function showSlide(index) {
+      const slides = document.querySelectorAll('.slide');
+      slides.forEach(slide => slide.classList.remove('active'));
+      slides[index].classList.add('active');
+      currentSlide = index;
+      updateProgress();
+    }
+
+    function updateProgress() {
+      const progress = ((currentSlide + 1) / alphabetData.length) * 100;
+      document.getElementById('progressBar').style.width = `${progress}%`;
+      document.getElementById('slideCounter').textContent =
+        `Letter ${currentSlide + 1} of ${alphabetData.length}`;
+    }
+
+    function getPreferredVoice() {
+      const voices = window.speechSynthesis.getVoices();
+      if (!voices || !voices.length) return null;
+
+      return (
+        voices.find(v => v.lang === 'en-US' && /female|google|samantha|zira/i.test(v.name)) ||
+        voices.find(v => v.lang === 'en-US') ||
+        voices.find(v => v.lang.startsWith('en')) ||
+        voices[0]
+      );
+    }
+
+    function speak(text) {
+      if (!('speechSynthesis' in window)) {
+        alert('Text-to-speech is not supported in this browser.');
+        return;
+      }
+
+      window.speechSynthesis.cancel();
+
+      const utterance = new SpeechSynthesisUtterance(text);
+      utterance.rate = 0.8;
+      utterance.pitch = 1.15;
+      utterance.volume = 1;
+
+      const preferredVoice = getPreferredVoice();
+      if (preferredVoice) utterance.voice = preferredVoice;
+
+      window.speechSynthesis.speak(utterance);
+    }
+
+    function speakCurrentLetter() {
+      const data = alphabetData[currentSlide];
+      speak(`${data.letter}. ${data.word}. ${data.letter} is for ${data.word}.`);
+    }
+
+    function nextSlide() {
+      if (currentSlide < alphabetData.length - 1) {
+        showSlide(currentSlide + 1);
+      } else {
+        showSlide(0);
+      }
+
+      if (isAutoPlaying) {
+        setTimeout(speakCurrentLetter, 350);
+      }
+    }
+
+    function prevSlide() {
+      if (currentSlide > 0) {
+        showSlide(currentSlide - 1);
+      } else {
+        showSlide(alphabetData.length - 1);
+      }
+
+      if (isAutoPlaying) {
+        setTimeout(speakCurrentLetter, 350);
+      }
+    }
+
+    function toggleAutoPlay() {
+      const btn = document.getElementById('autoPlayBtn');
+
+      if (isAutoPlaying) {
+        clearInterval(autoPlayInterval);
+        isAutoPlaying = false;
+        btn.textContent = '▶ Auto Play';
+        btn.style.background = 'linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)';
+        window.speechSynthesis.cancel();
+      } else {
+        isAutoPlaying = true;
+        btn.textContent = '⏸ Pause';
+        btn.style.background = 'linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)';
+        speakCurrentLetter();
+        autoPlayInterval = setInterval(nextSlide, 5000);
+      }
+    }
+
+    document.getElementById('nextBtn').addEventListener('click', () => {
+      nextSlide();
+      if (!isAutoPlaying) speakCurrentLetter();
+    });
+
+    document.getElementById('prevBtn').addEventListener('click', () => {
+      prevSlide();
+      if (!isAutoPlaying) speakCurrentLetter();
+    });
+
+    document.getElementById('speakBtn').addEventListener('click', speakCurrentLetter);
+    document.getElementById('autoPlayBtn').addEventListener('click', toggleAutoPlay);
+
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'ArrowRight' || e.key === ' ') {
+        e.preventDefault();
+        nextSlide();
+        if (!isAutoPlaying) speakCurrentLetter();
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        prevSlide();
+        if (!isAutoPlaying) speakCurrentLetter();
+      } else if (e.key === 's' || e.key === 'S') {
+        speakCurrentLetter();
+      } else if (e.key === 'a' || e.key === 'A') {
+        toggleAutoPlay();
+      }
+    });
+
+    window.speechSynthesis.onvoiceschanged = () => {
+      voicesReady = true;
+      window.speechSynthesis.getVoices();
+    };
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden && isAutoPlaying) {
+        clearInterval(autoPlayInterval);
+      } else if (!document.hidden && isAutoPlaying) {
+        clearInterval(autoPlayInterval);
+        autoPlayInterval = setInterval(nextSlide, 5000);
+      }
+    });
+
+    window.addEventListener('load', () => {
+      initSlides();
+
+      // On mobile browsers, auto speech may be blocked until user taps.
+      // So we avoid auto-speaking on load for better compatibility.
+      console.log('ABC Learning Adventure loaded successfully');
+    });
+  </script>
+</body>
+</html>
